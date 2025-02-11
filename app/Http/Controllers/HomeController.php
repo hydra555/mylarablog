@@ -16,8 +16,9 @@ class HomeController extends Controller
     {
 
         $featuredPosts = Cache::remember('featuredPosts', now()->addDay(), function () {
-            return Post::published()->featured()->with('categories')->latest('published_at')->take(3)->get();
+            return Post::published()->where('featured', 1)->with('categories')->latest('published_at')->take(3)->get();
         });
+
 
         $latestPosts = Cache::remember('latestPosts', now()->addDay(), function () {
             return Post::published()->with('categories')->latest('published_at')->take(9)->get();

@@ -43,4 +43,18 @@ class PostComments extends Component
     {
         return view('livewire.post-comments');
     }
+    public function deleteComment($commentId)
+    {
+        $comment = $this->post->comments()->find($commentId);
+
+        if (!$comment || $comment->user_id !== auth()->id()) {
+            return;
+        }
+
+        $comment->delete();
+
+        // Обновляем список комментариев
+        $this->resetPage();
+        $this->dispatch('commentDeleted');
+    }
 }

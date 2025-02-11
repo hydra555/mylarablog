@@ -48,9 +48,10 @@ class Post extends Model
         return $this->belongsToMany(User::class, 'post_like')->withTimestamps();
     }
 
+    // ✅ Оставляем только один метод `scopePublished()`
     public function scopePublished($query)
     {
-        $query->where('published_at', '<=', Carbon::now());
+        return $query->whereNotNull('published_at')->where('published_at', '<=', now());
     }
 
     public function scopeWithCategory($query, string $category)
@@ -60,10 +61,9 @@ class Post extends Model
         });
     }
 
-
     public function scopeFeatured($query)
     {
-        $query->where('featured', true);
+        $query->where('featured', 1);
     }
 
     public function scopePopular($query)
@@ -85,14 +85,12 @@ class Post extends Model
     public function getReadingTime()
     {
         $mins = round(str_word_count($this->body) / 250);
-
         return ($mins < 1) ? 1 : $mins;
     }
 
     public function getThumbnailUrl()
     {
         $isUrl = str_contains($this->image, 'http');
-
         return ($isUrl) ? $this->image : Storage::disk('public')->url($this->image);
     }
 }

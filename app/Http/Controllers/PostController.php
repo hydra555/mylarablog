@@ -14,7 +14,7 @@ class PostController extends Controller
 
         $categories = Cache::remember('categories', now()->addDays(3), function () {
             return Category::whereHas('posts', function ($query) {
-                $query->published();
+                $query->whereNotNull('published_at')->where('published_at', '<=', now());
             })->take(10)->get();
         });
 

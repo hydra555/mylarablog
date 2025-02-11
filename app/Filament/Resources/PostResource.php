@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PostResource\Pages;
-use App\Filament\Resources\PostResource\RelationManagers;
 use App\Filament\Resources\PostResource\RelationManagers\CommentsRelationManager;
 use App\Models\Post;
 use Filament\Forms;
@@ -44,28 +43,45 @@ class PostResource extends Resource
                                 if ($operation === 'edit') {
                                     return;
                                 }
-
                                 $set('slug', Str::slug($state));
                             }),
+
                         TextInput::make('slug')->required()->minLength(1)->unique(ignoreRecord: true)->maxLength(150),
+
                         RichEditor::make('body')
                             ->required()
-                            ->fileAttachmentsDirectory('posts/images')->columnSpanFull()
+                            ->fileAttachmentsDirectory('posts/images') // Разрешаем загрузку изображений
+                            ->columnSpanFull()
+
+
                     ]
                 )->columns(2),
+
                 Section::make('Meta')->schema(
                     [
                         FileUpload::make('image')->image()->directory('posts/thumbnails'),
-                        DateTimePicker::make('published_at')->nullable(),
+
+                        DateTimePicker::make('published_at')
+                            ->default(now()) // Устанавливаем текущую дату по умолчанию
+                            ->nullable(),
+
+
                         Checkbox::make('featured'),
+
                         Select::make('user_id')
-                            ->relationship('author', 'name')
-                            ->searchable()
+                            ->relationship('author', 'name', fn ($query) => $query->limit(10)) // Ограничиваем список до 10
+                            ->preload() // Загружаем 10 авторов сразу
+                            ->searchable() // Позволяет искать всех авторов
                             ->required(),
+
+
                         Select::make('categories')
-                            ->multiple()
-                            ->relationship('categories', 'title')
-                            ->searchable(),
+                            ->multiple() // Разрешает выбор нескольких категорий
+                            ->relationship('categories', 'title', fn ($query) => $query->limit(10)) // Загружает 10 категорий по умолчанию
+                            ->preload() // Показывает их сразу
+                            ->searchable() // Позволяет искать все категории
+                            ->required(),
+
                     ]
                 ),
             ]);
