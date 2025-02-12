@@ -88,9 +88,22 @@ class Post extends Model
         return ($mins < 1) ? 1 : $mins;
     }
 
+    // ✅ Теперь всегда HTTPS
     public function getThumbnailUrl()
     {
         $isUrl = str_contains($this->image, 'http');
-        return ($isUrl) ? $this->image : Storage::disk('public')->url($this->image);
+
+        if ($isUrl) {
+            return Str::replaceFirst('http://', 'https://', $this->image);
+        }
+
+        return secure_asset('storage/' . $this->image);
+    }
+
+    public function setBodyAttribute($value)
+    {
+        $value = preg_replace('/<a[^>]*>(<img[^>]*>)<\/a>/i', '$1', $value);
+        $value = preg_replace('/<figcaption[^>]*>.*?<\/figcaption>/is', '', $value);
+        $this->attributes['body'] = $value;
     }
 }

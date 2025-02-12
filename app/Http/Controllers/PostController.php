@@ -28,11 +28,14 @@ class PostController extends Controller
 
     public function show(Post $post)
     {
-        return view(
-            'posts.show',
-            [
-                'post' => $post
-            ]
-        );
+        // Убираем ссылки вокруг изображений
+        $post->body = preg_replace('/<a[^>]+href="[^"]+"[^>]*>(<img[^>]+>)<\/a>/i', '$1', $post->body);
+
+        // Убираем подписи к изображениям
+        $post->body = preg_replace('/<figcaption[^>]*>.*?<\/figcaption>/is', '', $post->body);
+
+        return view('posts.show', ['post' => $post]);
     }
+
+
 }
