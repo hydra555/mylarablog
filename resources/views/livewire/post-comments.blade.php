@@ -25,7 +25,7 @@
                     @if (Auth::check() && Auth::id() === $comment->user_id)
                         <div class="flex items-center space-x-2">
                             <!-- Кнопка редактирования (тонкий карандаш) -->
-                            <button wire:click="$dispatch('editComment', { commentId: {{ $comment->id }} })"
+                            <button wire:click="startEditing({{ $comment->id }})"
                                     class="text-gray-400 hover:text-green-500 transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -45,9 +45,25 @@
                     @endif
                 </div>
 
-                <div class="text-sm text-justify text-gray-700">
-                    {{ $comment->comment }}
-                </div>
+                <!-- Форма редактирования комментария -->
+                @if($commentToEdit && $commentToEdit->id === $comment->id)
+                    <textarea wire:model.defer="commentText"
+                              class="w-full p-2 text-sm border-gray-300 rounded-md"></textarea>
+                    <div class="mt-2 flex space-x-2">
+                        <button wire:click="updateComment"
+                                class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                            Сохранить
+                        </button>
+                        <button wire:click="cancelEditing"
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                            Отмена
+                        </button>
+                    </div>
+                @else
+                    <div class="text-sm text-justify text-gray-700">
+                        {{ $comment->comment }}
+                    </div>
+                @endif
             </div>
         @empty
             <div class="text-center text-gray-500">

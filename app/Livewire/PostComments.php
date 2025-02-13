@@ -15,9 +15,13 @@ class PostComments extends Component
 
     public Post $post;
     public ?Comment $commentToDelete = null;
+    public ?Comment $commentToEdit = null;
 
     #[Rule('required|min:3|max:200')]
     public string $comment = '';
+
+    #[Rule('required|min:3|max:200')]
+    public string $commentText = '';
 
     protected $listeners = ['commentUpdated' => '$refresh', 'commentDeleted' => '$refresh'];
 
@@ -35,8 +39,8 @@ class PostComments extends Component
         ]);
 
         $this->reset('comment');
-        $this->resetPage(); // Обновляем пагинацию
-        $this->dispatch('commentUpdated'); // Обновляем список комментариев
+        $this->resetPage();
+        $this->dispatch('commentUpdated');
     }
 
     #[Computed()]
@@ -45,6 +49,7 @@ class PostComments extends Component
         return $this->post->comments()->with('user')->latest()->paginate(5);
     }
 
+    // === Функции удаления ===
     public function confirmDeleteComment($commentId)
     {
         $this->commentToDelete = Comment::find($commentId);
@@ -57,13 +62,54 @@ class PostComments extends Component
 
     public function deleteComment()
     {
-        if (!$this->commentToDelete || $this->commentToDelete->user_id !== auth()->id()) {
+        if (!$this->commentToDelete) {
             return;
         }
 
-        $this->commentToDelete->delete();
+        // Перепроверяем, есть ли комментарий в базе перед удалением
+        $comment = Comment::find($this->commentToDelete->id);
+
+        if (!$comment || $comment->user_id !== auth()->id()) {
+            return;
+        }
+
+        $comment->delete();
         $this->commentToDelete = null;
-        $this->dispatch('commentDeleted'); // Обновляем список комментариев
+
+        $this->resetPage(); // Обновляем пагинацию после удаления
+        $this->dispatch('commentDeleted');
+    }
+
+    // === Функции редактирования ===
+    public function startEditing($commentId)
+    {
+        $this->commentToEdit = Comment::find($commentId);
+        if ($this->commentToEdit) {
+            $this->commentText = $this->commentToEdit->comment;
+        }
+    }
+
+    public function cancelEditing()
+    {
+        $this->commentToEdit = null;
+        $this->reset('commentText');
+    }
+
+    public function updateComment()
+    {
+        if (!$this->commentToEdit || $this->commentToEdit->user_id !== auth()->id()) {
+            return;
+        }
+
+        $this->validateOnly('commentText');
+
+        $this->commentToEdit->update([
+            'comment' => $this->commentText,
+        ]);
+
+        $this->commentToEdit = null;
+        $this->reset('commentText');
+        $this->dispatch('commentUpdated');
     }
 
     public function render()
@@ -71,4 +117,6 @@ class PostComments extends Component
         return view('livewire.post-comments');
     }
 }
+
+
 
