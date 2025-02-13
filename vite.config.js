@@ -12,6 +12,7 @@ export default defineConfig({
     server: {
         host: 'afblog.loc',
         port: 5173,
+        cors: true,
         https: {
             key: fs.readFileSync('D:/OS/OSPanel/data/ssl/projects/afblog.loc/cert.key'),
             cert: fs.readFileSync('D:/OS/OSPanel/data/ssl/projects/afblog.loc/cert.crt'),
