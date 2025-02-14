@@ -37,14 +37,9 @@ class PostResource extends Resource
                 Section::make('Main Content')->schema(
                     [
                         TextInput::make('title')
-                            ->live()
-                            ->required()->minLength(1)->maxLength(150)
-                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                                if ($operation === 'edit') {
-                                    return;
-                                }
-                                $set('slug', Str::slug($state));
-                            }),
+                            ->required()
+                            ->minLength(1)
+                            ->maxLength(150),
 
                         TextInput::make('slug')->required()->minLength(1)->unique(ignoreRecord: true)->maxLength(150),
 
@@ -62,16 +57,20 @@ class PostResource extends Resource
                         FileUpload::make('image')->image()->directory('posts/thumbnails'),
 
                         DateTimePicker::make('published_at')
-                            ->default(now()) // Устанавливаем текущую дату по умолчанию
-                            ->nullable(),
+                            ->default(now())
+                            ->required()
+                            ->native(false)
+                            ->displayFormat('Y-m-d'), // Только дата
 
 
                         Checkbox::make('featured'),
 
                         Select::make('user_id')
-                            ->relationship('author', 'name', fn ($query) => $query->limit(10)) // Ограничиваем список до 10
-                            ->preload() // Загружаем 10 авторов сразу
-                            ->searchable() // Позволяет искать всех авторов
+                            ->relationship('author', 'name', function ($query) {
+                                return $query->where('role', 'ADMIN'); // Показываем только админов
+                            })
+                            ->default(auth()->id()) // По умолчанию текущий админ
+                            ->preload()
                             ->required(),
 
 

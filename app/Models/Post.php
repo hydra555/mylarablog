@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class Post extends Model
 {
@@ -106,4 +107,54 @@ class Post extends Model
         $value = preg_replace('/<figcaption[^>]*>.*?<\/figcaption>/is', '', $value);
         $this->attributes['body'] = $value;
     }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($post) {
+            // Очистка кэша после удаления поста
+            Cache::forget('featuredPosts');
+            Cache::forget('latestPosts');
+
+            // Удаление всех комментариев (учитываем SoftDeletes)
+            foreach ($post->comments as $comment) {
+                $comment->forceDelete();
+            }
+
+            // Удаление лайков
+            $post->likes()->detach();
+
+            // Удаление основного изображения, если есть
+            if (!empty($post->image)) {
+                Storage::disk('public')->delete($post->image);
+            }
+
+            // Удаление meta_image, если оно есть
+            if (!empty($post->meta_image)) {
+                Storage::disk('public')->delete($post->meta_image);
+            }
+
+            // Извлечение и удаление изображений из body (если есть)
+            if (!empty($post->body)) {
+                preg_match_all('/<img.*?src=["\'](.*?)["\']/i', $post->body, $matches);
+                if (!empty($matches[1])) {
+                    foreach ($matches[1] as $imagePath) {
+                        $imagePath = str_replace(url('/storage/'), '', $imagePath);
+                        Storage::disk('public')->delete($imagePath);
+                    }
+                }
+            }
+        });
+
+        static::forceDeleting(function ($post) {
+            // Очистка title и slug перед удалением (не обязательно, но можно)
+            $post->update([
+                'title' => null,
+                'slug' => null,
+            ]);
+        });
+    }
+
+
 }
